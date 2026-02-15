@@ -27,6 +27,25 @@ interface MLExtractionField {
     confidence: number;
 }
 
+const getFriendlyExtractionMessage = (rawMessage: string) => {
+    const text = (rawMessage || '').toLowerCase();
+    if (
+        text.includes('all connection attempts failed') ||
+        text.includes('connection refused') ||
+        text.includes('unable to reach ml server') ||
+        text.includes('connecterror')
+    ) {
+        return 'ML server is unreachable. The backend will try local fallback extraction if available.';
+    }
+    return rawMessage;
+};
+
+const getConfidenceTextClass = (confidence: number) => {
+    if (confidence >= 0.8) return "text-emerald-600";
+    if (confidence >= 0.5) return "text-blue-600";
+    return "text-red-600";
+};
+
 const AdminClaimReview: React.FC = () => {
     const [, params] = useRoute("/admin/claims/review/:claimId");
     const [, setLocation] = useLocation();
@@ -151,8 +170,12 @@ const AdminClaimReview: React.FC = () => {
                             <div key={index} className="flex justify-between items-center py-2 border-b border-blue-200 last:border-b-0">
                                 <span className="font-medium text-blue-700">{field.field_name}:</span>
                                 <div className="text-right">
-                                    <div className="text-blue-900">{field.value}</div>
-                                    <div className="text-sm text-blue-600">
+                                    <div className="text-blue-900">
+                                        {field.field_name === 'extraction_error'
+                                            ? getFriendlyExtractionMessage(field.value)
+                                            : field.value}
+                                    </div>
+                                    <div className={`text-sm font-medium ${getConfidenceTextClass(field.confidence)}`}>
                                         Confidence: {(field.confidence * 100).toFixed(1)}%
                                     </div>
                                 </div>
@@ -173,7 +196,7 @@ const AdminClaimReview: React.FC = () => {
                     <h2 className="text-xl font-semibold mb-2">Error</h2>
                     <p>{error}</p>
                     <button
-                        onClick={() => setLocation('/admin')}
+                        onClick={() => setLocation('/admin/claims')}
                         className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
                     >
                         Back to Admin Panel
@@ -336,12 +359,12 @@ const AdminClaimReview: React.FC = () => {
                                 Amount: ₹{claimData.total_amount}
                             </p>
                         </div>
-                        <button
-                            onClick={() => setLocation('/admin')}
-                            className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
-                        >
-                            Back to Admin
-                        </button>
+                    <button
+                        onClick={() => setLocation('/admin/claims')}
+                        className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                    >
+                        Back to Admin
+                    </button>
                     </div>
                 </div>
 
